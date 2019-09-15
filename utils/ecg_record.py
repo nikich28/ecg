@@ -96,7 +96,7 @@ class ECGRPeaksRecord:
                                         extension='atr')
 
         self.rr_peaks, discarded_count = \
-            ecg_processing.get_rr_peaks_indices(record, self.annotation.fs)
+            ecg_processing.get_rr_peaks_indices(record)
 
         logging.info("peak detection for record {} is finished"
                      " number of duplicated peaks {} number of detected peaks {}".

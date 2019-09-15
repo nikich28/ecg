@@ -32,8 +32,8 @@ def get_rr_peaks_indices(record, max_bpm=230):
         else:
             discarded_count += 1
         prev_pi = pi
-
-    result = np.array(result)
+    # returns r-r peaks timestamps
+    result = np.array(result) / record.fs
 
     return result, discarded_count
 
@@ -73,8 +73,8 @@ def produce_peaks_windows(rr_peaks_indices, window_size, annotation):
     rr_peaks_indices - list of timestaps for r-peaks
     annotation - wfdb annotation object for the record from which got
     """
-
-    states_borders = list(annotation.sample) + [rr_peaks_indices[-1] + 1]
+    # indices of the r peaks which separates ecg states
+    states_borders = list(annotation.sample) + [len(rr_peaks_indices[-1]) + 1]
     states_sequence = ['start'] + annotation.aux_note
     labels_sequence = [STATE_TO_LABEL[s] for s in states_sequence]
 
@@ -85,9 +85,6 @@ def produce_peaks_windows(rr_peaks_indices, window_size, annotation):
     window = deque([], window_size)
     windows = []
     for peak_index in rr_peaks_indices:
-
-        if peak_index < states_borders[0] + window_size:
-            continue
 
         if peak_index >= current_border:
             state_ind += 1
