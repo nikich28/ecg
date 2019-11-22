@@ -68,13 +68,15 @@ def visualize_peaks(sig, peak_inds, fs, title,
     plt.show()
 
 
-def produce_peaks_windows(rr_peaks_indices, window_size, annotation):
+def produce_peaks_windows(rr_peaks, window_size, annotation):
     """
     rr_peaks_indices - list of timestaps for r-peaks
     annotation - wfdb annotation object for the record from which got
     """
     # indices of the r peaks which separates ecg states
-    states_borders = list(annotation.sample) + [len(rr_peaks_indices[-1]) + 1]
+    states_borders = np.array(annotation.sample) // annotation.fs
+    states_borders = np.append(states_borders, rr_peaks[-1] + 1)
+    states_borders = np.array(states_borders) / annotation.fs
     states_sequence = ['start'] + annotation.aux_note
     labels_sequence = [STATE_TO_LABEL[s] for s in states_sequence]
 
@@ -84,14 +86,14 @@ def produce_peaks_windows(rr_peaks_indices, window_size, annotation):
 
     window = deque([], window_size)
     windows = []
-    for peak_index in rr_peaks_indices:
+    for peak in rr_peaks:
 
-        if peak_index >= current_border:
+        if peak >= current_border:
             state_ind += 1
             current_label = labels_sequence[state_ind]
             current_border = states_borders[state_ind]
 
-        window.append((peak_index, current_label))
+        window.append((peak, current_label))
         if len(window) == window_size:
             windows.append(window)
 
