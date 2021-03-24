@@ -9,7 +9,7 @@ import utils.alphabet as alphabet
 
 
 def windows_cv_iter(rec_to_ind, n_folds):
-    cv = KFold(random_state=420, n_splits=n_folds)
+    cv = KFold(random_state=420, n_splits=n_folds, shuffle=True)
     records_list = list(rec_to_ind.keys())
     records_split_ind_iter = cv.split(records_list)
 
@@ -54,11 +54,15 @@ def dataframe_to_numpy(dataframe):
 def evaluate_estmator(estimator, x, y):
     prediction = estimator.predict(x)
     prediction_proba = estimator.predict_proba(x)
+    #prediction_proba = estimator.decision_function(x)
 
     metrics = dict()
 
     metrics['auc'] = roc_auc_score(np.array(y, dtype=np.int),
                                    prediction_proba[:, 1])
+    #metrics['auc'] = roc_auc_score(np.array(y, dtype=np.int),
+    #                               prediction_proba)
+
     metrics["sensitivity"] = recall_score(prediction, y, pos_label=1)
     metrics["accuracy"] = accuracy_score(prediction, y)
     metrics["specificity"] = recall_score(prediction, y, pos_label=0)
@@ -71,7 +75,7 @@ def cv_search(windows_dataset,
               estimator,
               estimator_params_grid,
               n_folds,
-              n_jobs=32):
+              n_jobs=-1):
     dataset, record_to_ind = \
         windows_to_dataframe(windows_dataset,
                              records_set)
@@ -89,10 +93,18 @@ def cv_search(windows_dataset,
         verbose=3,
         refit=True
     )
+
     random_search.fit(x, y)
-    train_scores = evaluate_estmator(estimator, x, y)
+    print('!!!')
+    print(random_search.cv_results_)
+    print('!!!')
+
+    train_scores = evaluate_estmator(random_search, x, y)
+    #estimator.fit(x, y)
+    #train_scores = evaluate_estmator(estimator, x, y)
 
     return random_search.best_estimator_, train_scores
+    #return estimator, train_scores
 
 
 def cv_eval(windows_dataset,

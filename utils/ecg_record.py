@@ -46,7 +46,7 @@ class ECGWindow:
                  "min_ch": self.min_ch,
                  "sum_ch_abs": self.sum_ch_abs,
                  "label": self.label
-                 }
+                }
         if len(self.ngramms_idf) > 0:
             source_ngramms = self.ngramms_idf
         else:
@@ -60,9 +60,7 @@ class ECGWindow:
         return dict_
 
     def prepare_alphabet(self, alphabet_threshold):
-        self.alphabet_encoding = \
-            alphabet.get_alphabet_encoding(self.changes_window,
-                                           alphabet_threshold)
+        self.alphabet_encoding = alphabet.get_alphabet_encoding(self.changes_window, alphabet_threshold)
 
     def normalize_ngramms(self, idf):
         norm = 0
@@ -88,11 +86,11 @@ class ECGRPeaksRecord:
     def download(self):
         logging.info("downloading record: {}".format(self.name))
         record = wfdb.rdrecord(self.name,
-                               pb_dir=self.database,
+                               pn_dir=self.database,
                                channels=[0])
 
         self.annotation = wfdb.io.rdann(self.name,
-                                        pb_dir=self.database,
+                                        pn_dir=self.database,
                                         extension='atr')
 
         self.rr_peaks, discarded_count = \
@@ -147,8 +145,7 @@ def restore_records(data_folder):
 
 def build_windows_dataset(records_folder, windows_size):
     records = restore_records(records_folder)
-    windows = {}
+    windows = dict()
     for record in records:
-        windows[record.name] = \
-            record.generate_windows(windows_size)
+        windows[record.name] = record.generate_windows(windows_size)
     return windows
