@@ -9,14 +9,26 @@ import utils.alphabet as alphabet
 
 
 def windows_cv_iter(rec_to_ind, n_folds):
-    cv = KFold(random_state=420, n_splits=n_folds, shuffle=True)
+    #cv = KFold(random_state=420, n_splits=n_folds, shuffle=True)
     records_list = list(rec_to_ind.keys())
-    records_split_ind_iter = cv.split(records_list)
+    #records_split_ind_iter = cv.split(records_list)
+    a = ['04015', '04126', '04936', '07879', '08405']
+    b = ['04043', '04048', '07859', '07910']
+    c = ['04746', '05261', '08215', '08378', '08455']
+    d = ['04908', '06426', '07162', '08219', '08434']
+    e = ['05091', '05121', '06453', '06995']
+    records_split_ind_iter = [[a + b + c + d, e],
+                              [a + b + c + e, d],
+                              [a + b + d + e, c],
+                              [a + c + d + e, b],
+                              [b + c + d + e, a]]
 
     for split_indices in records_split_ind_iter:
 
-        train_records = [records_list[ind] for ind in split_indices[0]]
-        test_records = [records_list[ind] for ind in split_indices[1]]
+        #train_records = [records_list[ind] for ind in split_indices[0]]
+        #test_records = [records_list[ind] for ind in split_indices[1]]
+        train_records = split_indices[0]
+        test_records = split_indices[1]
 
         test_windows_indices = []
         train_windows_indices = []
@@ -41,6 +53,7 @@ def windows_to_dataframe(windows_dataset,
             record_to_ind[record].append(windows_count)
             windows_count += 1
     dataset = pd.DataFrame(dataset)
+    dataset.to_csv("C:/Users/nikit/Downloads/dataset")
     return dataset, record_to_ind
 
 
@@ -54,6 +67,7 @@ def dataframe_to_numpy(dataframe):
 def evaluate_estmator(estimator, x, y):
     prediction = estimator.predict(x)
     prediction_proba = estimator.predict_proba(x)
+    #for svm should use the next line and change for auc
     #prediction_proba = estimator.decision_function(x)
 
     metrics = dict()
@@ -88,7 +102,7 @@ def cv_search(windows_dataset,
         estimator,
         param_grid=estimator_params_grid,
         n_jobs=n_jobs,
-        scoring='f1',
+        scoring='roc_auc',
         cv=record_cv_splitter,
         verbose=3,
         refit=True
@@ -114,38 +128,39 @@ def cv_eval(windows_dataset,
             test_records_tuples,
             n_folds):
     scores = {}
-    for test_records_tuple in test_records_tuples:
-        logging.info("performing cv for ")
-        train_records =\
-            windows_dataset.keys() - test_records_tuple
-
-        if gramms_size > 0:
-            alphabet.normalize_ngramms(
-                windows_dataset,
-                gramms_size,
-                train_records
-            )
-        best_estimator, train_metrics = \
-            cv_search(
-                windows_dataset,
-                train_records,
-                estimator,
-                estimator_params_grid,
-                n_folds
-            )
-        best_params = best_estimator.get_params()
-        test_dataframe, _ = windows_to_dataframe(
+    # for test_records_tuple in test_records_tuples:
+    #     logging.info("performing cv for ")
+    #     train_records =\
+    #         windows_dataset.keys() - test_records_tuple
+    train_records = windows_dataset.keys()
+    if gramms_size > 0:
+        alphabet.normalize_ngramms(
             windows_dataset,
-            test_records_tuple
+            gramms_size,
+            train_records
         )
-        x, y = dataframe_to_numpy(test_dataframe)
+    best_estimator, train_metrics = \
+        cv_search(
+            windows_dataset,
+            train_records,
+            estimator,
+            estimator_params_grid,
+            n_folds
+        )
+    best_params = best_estimator.get_params()
+    # test_dataframe, _ = windows_to_dataframe(
+    #     windows_dataset,
+    #     test_records_tuple
+    # )
+    # x, y = dataframe_to_numpy(test_dataframe)
 
-        test_metrics = evaluate_estmator(best_estimator, x, y)
+    # test_metrics = evaluate_estmator(best_estimator, x, y)
 
-        scores[test_records_tuple] = \
-            {"test_metrics": test_metrics,
-             "train_metrics": train_metrics,
-             "best_params": best_params}
+    #scores[test_records_tuple] = \
+        #{"test_metrics": test_metrics,
+    scores['scores'] = \
+            {"train_metrics": train_metrics,
+            "best_params": best_params}
 
     return scores
 
@@ -170,6 +185,7 @@ def cross_val(
             " for windows size: {}".format(window_size))
         windows_dataset = ecg_record.build_windows_dataset(
             records_dir, window_size)
+        
         for alp_threshold in alp_thresholds:
             logging.info("preparing alphabet"
                          " encoding for treshold:"

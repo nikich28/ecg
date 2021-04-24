@@ -76,13 +76,9 @@ def produce_peaks_windows(rr_peaks, window_size, annotation):
     # indices of the r peaks which separates ecg states
     states_borders = np.array(annotation.sample) // annotation.fs
     states_borders = np.append(states_borders, rr_peaks[-1] + 1)
-    #states_borders = np.array(states_borders) / annotation.fs
     states_sequence = ['start'] + annotation.aux_note
     labels_sequence = [STATE_TO_LABEL[s] for s in states_sequence]
 
-    #print(annotation.__dict__)
-    #print(np.array(annotation.sample) // annotation.fs)
-    #print(rr_peaks[100], rr_peaks[1000], rr_peaks[5000], rr_peaks[10000])
 
     state_ind = 0
     current_label = labels_sequence[state_ind]
@@ -90,7 +86,6 @@ def produce_peaks_windows(rr_peaks, window_size, annotation):
 
     window = deque([], window_size)
     windows = []
-    #print(states_borders, rr_peaks[1000], rr_peaks[2000], rr_peaks[3000], rr_peaks[10000], rr_peaks[20000], len(rr_peaks))
     for peak in rr_peaks:
 
         if peak >= current_border:
@@ -102,18 +97,14 @@ def produce_peaks_windows(rr_peaks, window_size, annotation):
 
         if len(window) == window_size:
             windows.append(window.copy())
-            #window = deque([], window_size)
 
 
     final_windows = []
-    s = 0
     for w in windows:
         labels = [p[1] for p in w]
         max_label = max(labels)
-        s += max_label
         if max_label != 2:
             final_windows.append([[pi[0] for pi in w], max_label])
-    #print(s)
 
     return final_windows
 
