@@ -109,15 +109,16 @@ def cv_search(windows_dataset,
     )
 
     random_search.fit(x, y)
-    print('!!!')
-    print(random_search.cv_results_)
-    print('!!!')
+    #print('!!!')
+    #print(random_search.cv_results_)
+    #print('!!!')
 
     train_scores = evaluate_estmator(random_search, x, y)
     #estimator.fit(x, y)
     #train_scores = evaluate_estmator(estimator, x, y)
 
-    return random_search.best_estimator_, train_scores
+    return random_search.best_estimator_, random_search.cv_results_
+    #return random_search.best_estimator_, train_scores
     #return estimator, train_scores
 
 
@@ -179,39 +180,47 @@ def cross_val(
         level=logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
-    for window_size in windows_sizes:
-        logging.info(
-            "building windows dataset"
-            " for windows size: {}".format(window_size))
-        windows_dataset = ecg_record.build_windows_dataset(
-            records_dir, window_size)
-        
-        for alp_threshold in alp_thresholds:
-            logging.info("preparing alphabet"
-                         " encoding for treshold:"
-                         " {}".format(alp_threshold))
-            for record in windows_dataset:
-                for window in windows_dataset[record]:
-                    window.prepare_alphabet(alp_threshold)
-            for gramms_size in gramms_sizes:
-                logging.info("preparing ngramms of size:"
-                             " {}".format(gramms_size))
-                alphabet.build_alphabet_dataset(
-                    windows_dataset,
-                    gramms_size=gramms_size
-                )
-                key = (window_size, alp_threshold, gramms_size)
-                logging.info("performing cross val for params:"
-                             "ws={};alp_treshold={};"
-                             "ngramms_size={}".format(window_size,
-                                                      alp_threshold,
-                                                      gramms_size))
-                results[key] = cv_eval(
-                    windows_dataset,
-                    gramms_size,
-                    estimator,
-                    estimator_params_grid,
-                    test_records_tuples,
-                    n_folds=n_folds,
-                )
-    return results
+    with open('windows.txt', 'r+') as wd, open('results.txt', 'a') as fout:
+        done_sizes = wd.readline().strip().split()
+        done = set(done_sizes)
+        for window_size in windows_sizes:
+            if str(window_size) in done:
+                continue
+
+            logging.info(
+                "building windows dataset"
+                " for windows size: {}".format(window_size))
+            windows_dataset = ecg_record.build_windows_dataset(
+                records_dir, window_size)
+            
+            for alp_threshold in alp_thresholds:
+                logging.info("preparing alphabet"
+                            " encoding for treshold:"
+                            " {}".format(alp_threshold))
+                for record in windows_dataset:
+                    for window in windows_dataset[record]:
+                        window.prepare_alphabet(alp_threshold)
+                for gramms_size in gramms_sizes:
+                    logging.info("preparing ngramms of size:"
+                                " {}".format(gramms_size))
+                    alphabet.build_alphabet_dataset(
+                        windows_dataset,
+                        gramms_size=gramms_size
+                    )
+                    key = (window_size, alp_threshold, gramms_size)
+                    logging.info("performing cross val for params:"
+                                "ws={};alp_treshold={};"
+                                "ngramms_size={}".format(window_size,
+                                                        alp_threshold,
+                                                        gramms_size))
+                    results[key] = cv_eval(
+                        windows_dataset,
+                        gramms_size,
+                        estimator,
+                        estimator_params_grid,
+                        test_records_tuples,
+                        n_folds=n_folds,
+                    )
+                    print(key, ':', result[key], sep=" ", file=fout)
+            print(str(window_size) + ' ', end="", file=wd)
+        return results
