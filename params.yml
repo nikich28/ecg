@@ -1,0 +1,19 @@
+est_params:
+  #n_estimators:
+  #  - 10
+  #  - 20
+
+windows:
+  - 16
+  - 32
+  - 128
+tresholds:
+  - 0.2
+  - 0.3
+  - 0.4
+ngramms:
+  - 2
+  - 3
+  - 4
+#path to ecg records 
+path: "C:/Users/nikit/Downloads/ecg-master/ecg-master/records"
