@@ -8,20 +8,13 @@ import utils.ecg_record as ecg_record
 import utils.alphabet as alphabet
 
 
-def windows_cv_iter(rec_to_ind, n_folds):
-    #cv = KFold(random_state=420, n_splits=n_folds, shuffle=True)
-    records_list = list(rec_to_ind.keys())
-    #records_split_ind_iter = cv.split(records_list)
-    a = ['04015', '04126', '04936', '07879', '08405']
-    b = ['04043', '04048', '07859', '07910']
-    c = ['04746', '05261', '08215', '08378', '08455']
-    d = ['04908', '06426', '07162', '08219', '08434']
-    e = ['05091', '05121', '06453', '06995']
-    records_split_ind_iter = [[a + b + c + d, e],
-                              [a + b + c + e, d],
-                              [a + b + d + e, c],
-                              [a + c + d + e, b],
-                              [b + c + d + e, a]]
+def windows_cv_iter(rec_to_ind, n_folds, train_folds):
+    #records_list = list(rec_to_ind.keys())
+    a, b, c, d = train_folds
+    records_split_ind_iter = [[a + b + c, d],
+                              [a + b + d, c],
+                              [a + c + d, b],
+                              [b + c + d, a]]
 
     for split_indices in records_split_ind_iter:
 
@@ -64,22 +57,26 @@ def dataframe_to_numpy(dataframe):
     return x, y
 
 
-def evaluate_estmator(estimator, x, y):
-    prediction = estimator.predict(x)
-    prediction_proba = estimator.predict_proba(x)
+def evaluate_estmator(estimator, x, y, test_fold, rec_to_ind):
+    test_windows_indices = []
+    for r in test_fold:
+        test_windows_indices += rec_to_ind[r]
+
+    prediction = estimator.predict(x[test_windows_indices])
+    prediction_proba = estimator.predict_proba(x[test_windows_indices])
     #for svm should use the next line and change for auc
-    #prediction_proba = estimator.decision_function(x)
+    #prediction_proba = estimator.decision_function(x[test_windows_indices])
 
     metrics = dict()
 
-    metrics['auc'] = roc_auc_score(np.array(y, dtype=np.int),
+    metrics['auc'] = roc_auc_score(np.array(y[test_windows_indices], dtype=np.int),
                                    prediction_proba[:, 1])
-    #metrics['auc'] = roc_auc_score(np.array(y, dtype=np.int),
+    #metrics['auc'] = roc_auc_score(np.array(y[test_windows_indices], dtype=np.int),
     #                               prediction_proba)
 
-    metrics["sensitivity"] = recall_score(prediction, y, pos_label=1)
-    metrics["accuracy"] = accuracy_score(prediction, y)
-    metrics["specificity"] = recall_score(prediction, y, pos_label=0)
+    metrics["sensitivity"] = recall_score(prediction, y[test_windows_indices], pos_label=1)
+    metrics["accuracy"] = accuracy_score(prediction, y[test_windows_indices])
+    metrics["specificity"] = recall_score(prediction, y[test_windows_indices], pos_label=0)
 
     return metrics
 
@@ -95,32 +92,38 @@ def cv_search(windows_dataset,
                              records_set)
     x, y = dataframe_to_numpy(dataset)
 
-    record_cv_splitter = windows_cv_iter(
-        record_to_ind, n_folds)
+    a = ['04015', '04126', '04936', '07879', '08405']
+    b = ['04043', '04048', '07859', '07910']
+    c = ['04746', '05261', '08215', '08378', '08455']
+    d = ['04908', '06426', '07162', '08219', '08434']
+    e = ['05091', '05121', '06453', '06995']
+    folds = [a, b, c, d, e]
+    results = dict()
+    params = dict()
+    for f in range(n_folds):
+        test_fold = folds[f]
+        train_folds = [folds[f-1], folds[f-2], folds[f-3], folds[f-4]]
 
-    random_search = GridSearchCV(
-        estimator,
-        param_grid=estimator_params_grid,
-        n_jobs=n_jobs,
-        scoring='roc_auc',
-        cv=record_cv_splitter,
-        verbose=3,
-        refit=True
-    )
+        record_cv_splitter = windows_cv_iter(
+            record_to_ind, n_folds, train_folds)
 
-    random_search.fit(x, y)
-    #print('!!!')
-    #print(random_search.cv_results_)
-    #print('!!!')
+        random_search = GridSearchCV(
+            estimator,
+            param_grid=estimator_params_grid,
+            n_jobs=n_jobs,
+            scoring='roc_auc',
+            cv=record_cv_splitter,
+            verbose=3,
+            refit=True
+        )
 
-    train_scores = evaluate_estmator(random_search, x, y)
-    #estimator.fit(x, y)
-    #train_scores = evaluate_estmator(estimator, x, y)
+        random_search.fit(x, y)
 
-    return random_search.best_estimator_, random_search.cv_results_
-    #return random_search.best_estimator_, train_scores
-    #return estimator, train_scores
+        test_scores = evaluate_estmator(random_search, x, y, test_fold, record_to_ind)
+        results['fold' + str(f)] = test_scores
+        params['fold' + str(f)] = random_search.best_estimator_
 
+    return params, results
 
 def cv_eval(windows_dataset,
             gramms_size,
@@ -140,7 +143,7 @@ def cv_eval(windows_dataset,
             gramms_size,
             train_records
         )
-    best_estimator, train_metrics = \
+    best_params, metrics = \
         cv_search(
             windows_dataset,
             train_records,
@@ -148,7 +151,7 @@ def cv_eval(windows_dataset,
             estimator_params_grid,
             n_folds
         )
-    best_params = best_estimator.get_params()
+    #best_params = best_estimator.get_params()
     # test_dataframe, _ = windows_to_dataframe(
     #     windows_dataset,
     #     test_records_tuple
@@ -160,8 +163,8 @@ def cv_eval(windows_dataset,
     #scores[test_records_tuple] = \
         #{"test_metrics": test_metrics,
     scores['scores'] = \
-            {"train_metrics": train_metrics,
-            "best_params": best_params}
+            {"metrics": metrics,
+            "params": best_params}
 
     return scores
 
@@ -221,6 +224,6 @@ def cross_val(
                         test_records_tuples,
                         n_folds=n_folds,
                     )
-                    print(key, ':', result[key], sep=" ", file=fout)
+                    print(key, ':', results[key], sep=" ", file=fout)
             print(str(window_size) + ' ', end="", file=wd)
         return results

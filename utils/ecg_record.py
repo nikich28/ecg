@@ -5,6 +5,7 @@ import sys
 import logging
 import pickle
 import numpy as np
+import pandas as pd
 import utils.alphabet as alphabet
 
 
@@ -107,7 +108,7 @@ class ECGRPeaksRecord:
             self.annotation
         )
         windows = [ECGWindow(p) for p in peaks_windows]
-        return windows
+        return windows, peaks_windows
 
 
 def download_database(
@@ -146,6 +147,15 @@ def restore_records(data_folder):
 def build_windows_dataset(records_folder, windows_size):
     records = restore_records(records_folder)
     windows = dict()
+    data_ = []
     for record in records:
-        windows[record.name] = record.generate_windows(windows_size)
+        a, b = record.generate_windows(windows_size)
+        windows[record.name] = a
+        data_ += b
+        #print("Record number:", record.name, "end of the record:", len(data_))
+    new_data = []
+    for d in data_:
+        new_data.append(d[0] + [d[1]])
+    new_data = pd.DataFrame(new_data)
+    #new_data.to_csv("C:/Users/nikit/Downloads/new_data1")
     return windows
