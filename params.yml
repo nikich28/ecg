@@ -1,12 +1,21 @@
 est_params:
-  #n_estimators:
-  #  - 10
-  #  - 20
+  n_estimators:
+    - 50
+    - 100
+    - 150
+  max_depth:
+    - 4
+    - 6
+    - 8
+  eta:
+    - 0.05
+    - 0.1
+    - 0.2
+    - 0.3
 
 windows:
   - 16
   - 32
-  - 128
 tresholds:
   - 0.2
   - 0.3
