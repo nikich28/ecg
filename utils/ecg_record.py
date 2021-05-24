@@ -152,10 +152,10 @@ def build_windows_dataset(records_folder, windows_size):
         a, b = record.generate_windows(windows_size)
         windows[record.name] = a
         data_ += b
-        #print("Record number:", record.name, "end of the record:", len(data_))
-    new_data = []
-    for d in data_:
-        new_data.append(d[0] + [d[1]])
-    new_data = pd.DataFrame(new_data)
-    #new_data.to_csv("C:/Users/nikit/Downloads/new_data1")
+    #     print("Record number:", record.name, "end of the record:", len(data_))
+    # new_data = []
+    # for d in data_:
+    #     new_data.append(d[0] + [d[1]])
+    # new_data = pd.DataFrame(new_data)
+    # new_data.to_csv("C:/Users/nikit/Downloads/new_data128")
     return windows

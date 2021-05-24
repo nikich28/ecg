@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import KFold
 from sklearn.model_selection import GridSearchCV
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score, accuracy_score, recall_score
 import utils.ecg_record as ecg_record
 import utils.alphabet as alphabet
@@ -46,7 +47,7 @@ def windows_to_dataframe(windows_dataset,
             record_to_ind[record].append(windows_count)
             windows_count += 1
     dataset = pd.DataFrame(dataset)
-    dataset.to_csv("C:/Users/nikit/Downloads/dataset")
+    #dataset.to_csv("C:/Users/nikit/Downloads/dataset32")
     return dataset, record_to_ind
 
 
@@ -99,31 +100,42 @@ def cv_search(windows_dataset,
     e = ['05091', '05121', '06453', '06995']
     folds = [a, b, c, d, e]
     results = dict()
-    params = dict()
-    for f in range(n_folds):
-        test_fold = folds[f]
-        train_folds = [folds[f-1], folds[f-2], folds[f-3], folds[f-4]]
+    cs = estimator_params_grid['c']
+    for c in cs:
+        res_ = dict()
+        for f in range(n_folds):
+            test_fold = folds[f]
+            train_folds = [folds[f-1], folds[f-2], folds[f-3], folds[f-4]]
 
-        record_cv_splitter = windows_cv_iter(
-            record_to_ind, n_folds, train_folds)
+            # record_cv_splitter = windows_cv_iter(
+            #     record_to_ind, n_folds, train_folds)
 
-        random_search = GridSearchCV(
-            estimator,
-            param_grid=estimator_params_grid,
-            n_jobs=n_jobs,
-            scoring='roc_auc',
-            cv=record_cv_splitter,
-            verbose=3,
-            refit=True
-        )
+            # random_search = GridSearchCV(
+            #     estimator,
+            #     param_grid=estimator_params_grid,
+            #     n_jobs=n_jobs,
+            #     scoring='roc_auc',
+            #     cv=record_cv_splitter,
+            #     verbose=3,
+            #     refit=True
+            # )
 
-        random_search.fit(x, y)
+            # random_search.fit(x, y)
 
-        test_scores = evaluate_estmator(random_search, x, y, test_fold, record_to_ind)
-        results['fold' + str(f)] = test_scores
-        params['fold' + str(f)] = random_search.best_estimator_
+            train_windows_indices = []
+            for train_fold in train_folds:
+                for r in train_fold:
+                    train_windows_indices += record_to_ind[r]
 
-    return params, results
+            model = LogisticRegression(C=c, max_iter=1000, n_jobs=-1)
+            model.fit(x[train_windows_indices], y[train_windows_indices])
+
+            test_scores = evaluate_estmator(model, x, y, test_fold, record_to_ind)
+            res_['fold' + str(f)] = test_scores
+            #params['fold' + str(f)] = random_search.best_estimator_
+        results["c=" + str(c)] = res_
+
+    return results
 
 def cv_eval(windows_dataset,
             gramms_size,
@@ -143,7 +155,7 @@ def cv_eval(windows_dataset,
             gramms_size,
             train_records
         )
-    best_params, metrics = \
+    metrics = \
         cv_search(
             windows_dataset,
             train_records,
@@ -163,8 +175,7 @@ def cv_eval(windows_dataset,
     #scores[test_records_tuple] = \
         #{"test_metrics": test_metrics,
     scores['scores'] = \
-            {"metrics": metrics,
-            "params": best_params}
+            {"metrics": metrics}
 
     return scores
 
