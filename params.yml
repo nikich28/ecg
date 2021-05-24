@@ -1,17 +1,10 @@
 est_params:
-  n_estimators:
-    - 50
-    - 100
-    - 150
-  max_depth:
-    - 6
-    - 8
-  eta:
-    - 0.05
-    - 0.15
-    - 0.3
-  verbosity:
-    - 0
+  c:
+    - 0.01
+    - 0.1
+    - 0.5
+    - 1
+    - 10
 
 windows:
   - 16
@@ -26,4 +19,4 @@ ngramms:
   - 3
   - 4
 #path to ecg records 
-path: "C:/Users/nikit/Downloads/ecg-master/ecg-master/records"
+path: "C:/Users/nikit/Downloads/ecg-master/ecg-log-reg/records"

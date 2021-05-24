@@ -16,17 +16,18 @@ from sklearn.ensemble import RandomForestClassifier
 
 
 
-with open(r'params.yml') as file:
+with open('params.yml', 'r') as file:
     params_list = yaml.load(file, Loader=yaml.FullLoader)
 path = params_list["path"]
 ws = params_list['windows']
 trs = params_list['tresholds']
 ngrs = params_list['ngramms']
 est_params = params_list["est_params"]
+print(est_params)
 
 #record.download_database(path)
 
 #format: estimator, est_params, windows_sizes, alphabet tresholds, ngramms sizes, -, -, path to records 
 #res = cv.cross_val(XGBClassifier(), {}, [32], [0.2], [3], {}, 5, "C:/Users/nikit/Downloads/ecg-master/ecg-master/records")
-res = cv.cross_val(XGBClassifier(), est_params, ws, trs, ngrs, {}, 5, path)
+res = cv.cross_val(LogisticRegression(), est_params, ws, trs, ngrs, {}, 5, path)
 print(res) #also results are in results.txt file
