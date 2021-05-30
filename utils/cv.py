@@ -46,7 +46,7 @@ def windows_to_dataframe(windows_dataset,
             record_to_ind[record].append(windows_count)
             windows_count += 1
     dataset = pd.DataFrame(dataset)
-    dataset.to_csv("C:/Users/nikit/Downloads/dataset")
+    #dataset.to_csv("C:/Users/nikit/Downloads/dataset32")
     return dataset, record_to_ind
 
 
@@ -183,7 +183,7 @@ def cross_val(
         level=logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
-    with open('windows.txt', 'r+') as wd, open('results.txt', 'a') as fout:
+    with open('windows.txt', 'r+') as wd:
         done_sizes = wd.readline().strip().split()
         done = set(done_sizes)
         for window_size in windows_sizes:
@@ -224,6 +224,7 @@ def cross_val(
                         test_records_tuples,
                         n_folds=n_folds,
                     )
-                    print(key, ':', results[key], sep=" ", file=fout)
+                    with open('results.txt', 'a') as fout:
+                        print(key, ':', results[key], sep=" ", file=fout)
             print(str(window_size) + ' ', end="", file=wd)
         return results
