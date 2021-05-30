@@ -194,7 +194,7 @@ def cross_val(
         level=logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
-    with open('windows.txt', 'r+') as wd, open('results.txt', 'a') as fout:
+    with open('windows.txt', 'r+') as wd:
         done_sizes = wd.readline().strip().split()
         done = set(done_sizes)
         for window_size in windows_sizes:
@@ -235,6 +235,7 @@ def cross_val(
                         test_records_tuples,
                         n_folds=n_folds,
                     )
-                    print(key, ':', results[key], sep=" ", file=fout)
+                    with open('results.txt', 'a') as fout:
+                        print(key, ':', results[key], sep=" ", file=fout)
             print(str(window_size) + ' ', end="", file=wd)
         return results
