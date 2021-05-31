@@ -14,9 +14,8 @@ est_params:
     - 0
 
 windows:
-  - 16
-  - 32
   - 64
+  - 128
 tresholds:
   - 0.1
   - 0.2
